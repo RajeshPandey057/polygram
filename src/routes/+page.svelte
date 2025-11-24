@@ -1,2 +1,9 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import SEO from '@/components/seo.svelte';
+
+ 
+</script>
+<SEO
+	title="Latest Financial News & AI Insights"
+	description="Stay updated with the latest financial news, market trends, and AI-powered analysis. Finews delivers expert coverage on stocks, investments, and global finance."
+	image="/images/financial-news/ai-insights.webp" />

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import Sonner from '@/components/ui/sonner/sonner.svelte';
-	import '../layout.css';
+	import './layout.css';
 
 	let { children } = $props();
 </script>
