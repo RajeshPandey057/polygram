@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: https://finews.ai/sitemap.xml
+Sitemap: https://polygram.ai/sitemap.xml

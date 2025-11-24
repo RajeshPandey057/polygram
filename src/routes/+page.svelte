@@ -5,5 +5,5 @@
 </script>
 <SEO
 	title="Latest Financial News & AI Insights"
-	description="Stay updated with the latest financial news, market trends, and AI-powered analysis. Finews delivers expert coverage on stocks, investments, and global finance."
+	description="Stay updated with the latest financial news, market trends, and AI-powered analysis. Polygram delivers expert coverage on stocks, investments, and global finance."
 	image="/images/financial-news/ai-insights.webp" />

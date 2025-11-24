@@ -3,8 +3,8 @@
 	"start_url": "/",
 	"display": "standalone",
 	"theme_color": "#1E40AF",
-	"short_name": "Finews",
-	"name": "Finews - AI Financial News",
+	"short_name": "Polygram",
+	"name": "Polygram - AI Financial News",
 	"description": "AI-powered platform delivering real-time financial news, market insights, and analytics for investors and financial professionals.",
 	"background_color": "#ffffff",
 	"icons": [

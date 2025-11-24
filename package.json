@@ -1,18 +1,18 @@
 {
-	"name": "finews",
+	"name": "polygram",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
 	"author": "Raj",
 	"repository": {
 		"type": "git",
-		"url": "RajeshPandey057@github.org/finews.git"
+		"url": "RajeshPandey057@github.org/polygram.git"
 	},
 	"bugs": {
 		"email": "rajesh-pandey@outlook.in",
-		"url": "https://github.com/RajeshPandey057/finews/issues"
+		"url": "https://github.com/RajeshPandey057/polygram/issues"
 	},
-	"description": "Finews is an AI-powered platform delivering real-time financial news, insights, and analytics for investors and professionals.",
+	"description": "Polygram is an AI-powered platform delivering real-time financial news, insights, and analytics for investors and professionals.",
 	"engines": {
 		"bun": ">=1.0.0",
 		"pnpm": "Please use bun instead of npm.",

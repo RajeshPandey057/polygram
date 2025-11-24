@@ -1,6 +1,6 @@
-# Finews - AI-Powered Financial News Platform
+# Polygram - AI-Powered Financial News Platform
 
-Finews is an AI-managed financial news application that delivers real-time market insights, news, and analytics for investors and financial professionals.
+Polygram is an AI-managed financial news application that delivers real-time market insights, news, and analytics for investors and financial professionals.
 
 ## Features
 
