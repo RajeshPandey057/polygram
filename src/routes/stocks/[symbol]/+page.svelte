@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
 	import { onMount } from "svelte";
 	import SEO from "@/components/seo.svelte";
 	import StockChart from "$lib/components/stock-chart.svelte";
 	import WatchlistButton from "$lib/components/watchlist-button.svelte";
 	import ArrowLeft from "~icons/lucide/arrow-left";
+	import Send from "~icons/lucide/send-horizontal";
+	import Bot from "~icons/lucide/bot";
+	import User from "~icons/lucide/user";
 	import * as Chart from "$lib/components/ui/chart/index.js";
 	import { BarChart, Bar, AreaChart, Area } from "layerchart";
 	import { scaleUtc } from "d3-scale";
@@ -16,8 +20,29 @@
 	let stockData = $state<StockData | null>(null);
 	let loading = $state(true);
 	let selectedPeriod = $state("1Y");
+	let aiInput = $state("");
+	let chatMode = $state(false);
+	let messages = $state<Array<{ role: "user" | "assistant"; content: string; timestamp: Date }>>([]);
+	let chatLoading = $state(false);
+	let contentRef: HTMLDivElement | null = $state(null);
 
 	const symbol = $derived($page.params.symbol?.toUpperCase() || "");
+
+	// Get return URL from query params or use browser history
+	const returnUrl = $derived($page.url.searchParams.get("return") || null);
+
+	function handleGoBack() {
+		if (returnUrl) {
+			// If return URL is provided, navigate to it
+			goto(returnUrl);
+		} else if (typeof window !== "undefined" && window.history.length > 1) {
+			// Use browser history if available
+			window.history.back();
+		} else {
+			// Fallback to home page
+			goto("/");
+		}
+	}
 
 	const periods = [
 		{ value: "1D", label: "1D" },
@@ -82,6 +107,65 @@
 		return `₹${value.toLocaleString()}`;
 	}
 
+	async function handleSendMessage() {
+		const messageToSend = aiInput.trim();
+		if (!messageToSend) return;
+
+		// Switch to chat mode on first message
+		if (!chatMode) {
+			chatMode = true;
+		}
+
+		// Add user message
+		messages = [
+			...messages,
+			{
+				role: "user",
+				content: messageToSend,
+				timestamp: new Date(),
+			},
+		];
+		aiInput = "";
+
+		// Simulate AI response
+		chatLoading = true;
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
+		messages = [
+			...messages,
+			{
+				role: "assistant",
+				content: `I understand you're asking about: "${messageToSend}" regarding ${stockData?.detail.name || stockData?.detail.symbol || "this stock"}. This is a placeholder response. The AI chat functionality will be integrated with your backend service.`,
+				timestamp: new Date(),
+			},
+		];
+
+		chatLoading = false;
+
+		// Scroll to bottom to show latest message in chat panel
+		setTimeout(() => {
+			const chatMessages = document.querySelector('[data-chat-messages]') as HTMLElement;
+			if (chatMessages) {
+				chatMessages.scrollTop = chatMessages.scrollHeight;
+			}
+		}, 100);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter" && !event.shiftKey) {
+			event.preventDefault();
+			handleSendMessage();
+		}
+	}
+
+	function formatTime(date: Date): string {
+		return date.toLocaleTimeString("en-US", {
+			hour: "numeric",
+			minute: "2-digit",
+			hour12: true,
+		});
+	}
+
 	onMount(() => {
 		fetchStockData();
 	});
@@ -97,13 +181,14 @@
 		<!-- Header -->
 		<header class="flex items-center justify-between border-b border-white/7 px-4 py-4 md:px-8">
 			<div class="flex items-center gap-4">
-				<a
-					href="/"
+				<button
+					type="button"
+					onclick={handleGoBack}
 					class="flex size-10 items-center justify-center rounded-lg border border-white/7 bg-white/4 text-white/70 transition hover:bg-white/8"
 					aria-label="Go back"
 				>
 					<ArrowLeft class="size-4" />
-				</a>
+				</button>
 				{#if stockData}
 					<div class="flex items-center gap-3">
 						<div class="flex size-10 items-center justify-center rounded border border-white/7 bg-white/4 text-lg font-semibold text-white">
@@ -134,7 +219,10 @@
 				<p class="text-white/70">Stock not found</p>
 			</div>
 		{:else}
-			<div class="flex flex-1 flex-col gap-6 px-4 py-6 md:px-8">
+			<div
+				bind:this={contentRef}
+				class="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 md:px-8"
+			>
 				<!-- Price and Change -->
 				<div class="flex items-baseline gap-4">
 					<div>
@@ -366,6 +454,124 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Floating Chat Button -->
+			{#if !chatMode}
+				<button
+					type="button"
+					onclick={() => (chatMode = true)}
+					class="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full border border-white/15 bg-[#2e2e2e] text-white shadow-lg transition hover:bg-[#3e3e3e] hover:shadow-xl md:bottom-8 md:right-8"
+					aria-label="Open AI chat"
+				>
+					<Bot class="size-6" />
+				</button>
+			{:else}
+				<!-- Chat Input Panel -->
+				<div class="fixed bottom-6 right-6 z-50 w-full max-w-md rounded-xl border border-white/15 bg-[#171717] shadow-2xl md:bottom-8 md:right-8 md:w-[400px]">
+					<!-- Chat Header -->
+					<div class="flex items-center justify-between border-b border-white/7 px-4 py-3">
+						<div class="flex items-center gap-2">
+							<Bot class="size-5 text-white" />
+							<span class="text-sm font-medium text-white">AI Assistant</span>
+						</div>
+						<button
+							type="button"
+							onclick={() => {
+								chatMode = false;
+								messages = [];
+								aiInput = "";
+							}}
+							class="flex size-6 items-center justify-center rounded text-white/70 transition hover:bg-white/10 hover:text-white"
+							aria-label="Close chat"
+						>
+							<svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+
+					<!-- Chat Messages -->
+					<div data-chat-messages class="max-h-[400px] overflow-y-auto px-4 py-4">
+						{#if messages.length === 0}
+							<div class="flex items-center justify-center py-8">
+								<div class="text-center">
+									<Bot class="mx-auto mb-2 size-8 text-white/40" />
+									<p class="text-xs text-white/60">Ask questions about this stock</p>
+								</div>
+							</div>
+						{:else}
+							<div class="flex flex-col gap-3">
+								{#each messages as message (message.timestamp.getTime())}
+									<div
+										class="flex gap-2 {message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}"
+									>
+										<div
+											class="flex size-6 shrink-0 items-center justify-center rounded-full {message.role === 'user'
+												? 'bg-white/20'
+												: 'bg-white/10'}"
+										>
+											{#if message.role === "user"}
+												<User class="size-3 text-white" />
+											{:else}
+												<Bot class="size-3 text-white" />
+											{/if}
+										</div>
+										<div
+											class="flex max-w-[80%] flex-col gap-1 {message.role === 'user' ? 'items-end' : 'items-start'}"
+										>
+											<div
+												class="rounded-lg px-3 py-2 text-xs {message.role === 'user'
+													? 'bg-white/10 text-white'
+													: 'bg-white/5 text-white/90'}"
+											>
+												{message.content}
+											</div>
+											<span class="text-[10px] text-white/40">{formatTime(message.timestamp)}</span>
+										</div>
+									</div>
+								{/each}
+								{#if chatLoading}
+									<div class="flex gap-2">
+										<div class="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/10">
+											<Bot class="size-3 text-white" />
+										</div>
+										<div class="rounded-lg bg-white/5 px-3 py-2 text-xs text-white/90">
+											<div class="flex gap-1">
+												<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-white/60 [animation-delay:-0.3s]"></span>
+												<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-white/60 [animation-delay:-0.15s]"></span>
+												<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-white/60"></span>
+											</div>
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+
+					<!-- Chat Input -->
+					<div class="border-t border-white/7 px-4 py-3">
+						<div class="flex items-center gap-2 rounded-xl border border-white/15 bg-[#2e2e2e] px-3 py-2">
+							<input
+								bind:value={aiInput}
+								onkeydown={handleKeydown}
+								type="text"
+								placeholder="Ask a question..."
+								class="flex-1 border-0 bg-transparent text-xs text-white placeholder:text-white/50 focus:outline-none"
+								disabled={chatLoading}
+							/>
+							<button
+								type="button"
+								onclick={handleSendMessage}
+								disabled={chatLoading || !aiInput.trim()}
+								class="rounded-full border border-white/20 bg-white/10 p-1.5 text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+								aria-label="Send message"
+							>
+								<Send class="size-3.5" />
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </main>

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
+	import { page } from "$app/stores";
 	import SEO from "@/components/seo.svelte";
+	import NavUser from "$lib/components/nav-user.svelte";
 	import Bookmark from "~icons/lucide/bookmark";
 	import Trash2 from "~icons/lucide/trash-2";
 	import RadioSignal from "~icons/lucide/radio";
-	import ChevronLeft from "~icons/lucide/chevron-left";
 	import Settings from "~icons/lucide/settings";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import WatchlistConfigPanel from "$lib/components/watchlist-config-panel.svelte";
@@ -70,7 +71,9 @@
 	}
 
 	function handleRowClick(symbol: string) {
-		goto(`/stocks/${symbol}`);
+		// Include return URL so back button works correctly
+		const currentPath = $page.url.pathname;
+		goto(`/stocks/${symbol}?return=${encodeURIComponent(currentPath)}`);
 	}
 
 	function formatCurrency(value: number): string {
@@ -226,13 +229,6 @@
 					<!-- Placeholder icon - light gray circle -->
 				</div>
 				<div class="flex-1 text-base font-semibold text-white">Polygram</div>
-				<button
-					class="flex size-8 items-center justify-center text-white/70 transition hover:text-white"
-					type="button"
-					aria-label="Collapse sidebar"
-				>
-					<ChevronLeft class="size-4" />
-				</button>
 			</div>
 
 			<!-- Navigation -->
@@ -252,6 +248,11 @@
 					<span>Watchlist</span>
 				</a>
 			</nav>
+
+			<!-- User Profile Menu - Bottom of Sidebar -->
+			<div class="mt-auto border-t border-white/5 pt-2 md:mt-auto">
+				<NavUser />
+			</div>
 		</aside>
 
 		<!-- Main Content -->

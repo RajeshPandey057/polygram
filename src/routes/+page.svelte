@@ -3,6 +3,8 @@
 	import SEO from "@/components/seo.svelte";
 	import NewsConfigPanel from "$lib/components/news-config-panel.svelte";
 	import NewsDetailPanel from "$lib/components/news-detail-panel.svelte";
+	import ChatSidebar from "$lib/components/chat-sidebar.svelte";
+	import NavUser from "$lib/components/nav-user.svelte";
 	import ArrowLeft from "~icons/lucide/arrow-left";
 	import ArrowRight from "~icons/lucide/arrow-right";
 	import Calendar from "~icons/lucide/calendar";
@@ -11,7 +13,6 @@
 	import Send from "~icons/lucide/send-horizontal";
 	import Settings from "~icons/lucide/settings";
 	import Bookmark from "~icons/lucide/bookmark";
-	import ChevronLeft from "~icons/lucide/chevron-left";
 	import { page } from "$app/stores";
 	import ChevronUp from "~icons/lucide/chevron-up";
 	import ChevronDown from "~icons/lucide/chevron-down";
@@ -48,6 +49,8 @@
 	let sortColumn = $state<string | null>(null);
 	let sortDirection = $state<"asc" | "desc">("asc");
 	let aiInput = $state("");
+	let chatSidebarOpen = $state(false);
+	let initialChatMessage = $state("");
 
 	function formatDate(date: Date): string {
 		const day = date.getDate();
@@ -203,13 +206,6 @@
 					<!-- Placeholder icon - light gray circle -->
 				</div>
 				<div class="flex-1 text-base font-semibold text-white">Polygram</div>
-				<button
-					class="flex size-8 items-center justify-center text-white/70 transition hover:text-white"
-					type="button"
-					aria-label="Collapse sidebar"
-				>
-					<ChevronLeft class="size-4" />
-				</button>
 			</div>
 
 			<!-- Navigation -->
@@ -229,6 +225,11 @@
 					</a>
 				{/each}
 			</nav>
+
+			<!-- User Profile Menu - Bottom of Sidebar -->
+			<div class="mt-auto border-t border-white/5 pt-2 md:mt-auto">
+				<NavUser />
+			</div>
 		</aside>
 
 		<!-- Primary content -->
@@ -401,10 +402,26 @@
 						type="text"
 						placeholder="Ask AI about today's news"
 						class="flex-1 border-0 bg-transparent text-white placeholder:text-white/50 focus:outline-none"
+						onkeydown={(e) => {
+							if (e.key === "Enter" && !e.shiftKey && aiInput.trim()) {
+								e.preventDefault();
+								initialChatMessage = aiInput.trim();
+								aiInput = "";
+								chatSidebarOpen = true;
+							}
+						}}
 					/>
 					<button
 						type="button"
-						class="rounded-full border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20"
+						onclick={() => {
+							if (aiInput.trim()) {
+								initialChatMessage = aiInput.trim();
+								aiInput = "";
+								chatSidebarOpen = true;
+							}
+						}}
+						disabled={!aiInput.trim()}
+						class="rounded-full border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
 						aria-label="Send prompt"
 					>
 						<Send class="size-4" />
@@ -420,3 +437,6 @@
 
 <!-- News Detail Panel -->
 <NewsDetailPanel bind:open={detailPanelOpen} detail={selectedNewsDetail} />
+
+<!-- Chat Sidebar -->
+<ChatSidebar bind:open={chatSidebarOpen} initialMessage={initialChatMessage} />

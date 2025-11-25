@@ -7,7 +7,10 @@
 	import TrendingDown from "~icons/lucide/trending-down";
 	import ThumbsUp from "~icons/lucide/thumbs-up";
 	import LinkIcon from "~icons/lucide/link";
+	import Bot from "~icons/lucide/bot";
+	import User from "~icons/lucide/user";
 	import { goto } from "$app/navigation";
+	import { page } from "$app/stores";
 	import type { NewsDetail } from "$lib/types/news";
 
 	let {
@@ -20,6 +23,10 @@
 
 	let selectedTimeframe = $state<"1D" | "1W" | "1M" | "1Y">("1D");
 	let aiInput = $state("");
+	let chatMode = $state(false);
+	let messages = $state<Array<{ role: "user" | "assistant"; content: string; timestamp: Date }>>([]);
+	let loading = $state(false);
+	let contentRef: HTMLDivElement | null = $state(null);
 
 	const changeValue = $derived(
 		detail ? detail.changes[selectedTimeframe] : 0
@@ -34,6 +41,73 @@
 		if (level.includes("Negative")) return "bg-red-400";
 		return "bg-yellow-400";
 	}
+
+	async function handleSendMessage() {
+		const messageToSend = aiInput.trim();
+		if (!messageToSend) return;
+
+		// Switch to chat mode on first message
+		if (!chatMode) {
+			chatMode = true;
+		}
+
+		// Add user message
+		messages = [
+			...messages,
+			{
+				role: "user",
+				content: messageToSend,
+				timestamp: new Date(),
+			},
+		];
+		aiInput = "";
+
+		// Simulate AI response
+		loading = true;
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
+		messages = [
+			...messages,
+			{
+				role: "assistant",
+				content: `I understand you're asking about: "${messageToSend}" regarding ${detail?.name || "this news"}. This is a placeholder response. The AI chat functionality will be integrated with your backend service.`,
+				timestamp: new Date(),
+			},
+		];
+
+		loading = false;
+
+		// Scroll to bottom to show latest message
+		setTimeout(() => {
+			if (contentRef) {
+				contentRef.scrollTop = contentRef.scrollHeight;
+			}
+		}, 100);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter" && !event.shiftKey) {
+			event.preventDefault();
+			handleSendMessage();
+		}
+	}
+
+	function formatTime(date: Date): string {
+		return date.toLocaleTimeString("en-US", {
+			hour: "numeric",
+			minute: "2-digit",
+			hour12: true,
+		});
+	}
+
+	// Reset chat mode when panel closes
+	$effect(() => {
+		if (!open) {
+			chatMode = false;
+			messages = [];
+			aiInput = "";
+		}
+	});
 </script>
 
 {#if open && detail}
@@ -59,7 +133,9 @@
 				type="button"
 				id="news-detail-title"
 				onclick={() => {
-					goto(`/stocks/${detail.code}`);
+					// Include return URL so back button works correctly
+					const currentPath = $page.url.pathname;
+					goto(`/stocks/${detail.code}?return=${encodeURIComponent(currentPath)}`);
 					open = false;
 				}}
 				class="text-base font-medium leading-normal text-white transition hover:text-[#8CFF88] cursor-pointer"
@@ -77,7 +153,10 @@
 		</div>
 
 		<!-- Content -->
-		<div class="flex max-h-[calc(100vh-120px)] flex-col gap-9 overflow-y-auto px-4 py-0">
+		<div
+			bind:this={contentRef}
+			class="flex max-h-[calc(100vh-120px)] flex-col gap-9 overflow-y-auto px-4 py-0 transition-all duration-300"
+		>
 			<!-- News Summary -->
 			<div class="flex flex-col gap-4">
 				<div class="flex h-[30px] items-center px-2">
@@ -260,20 +339,91 @@
 					{/each}
 				</div>
 			</div>
+
+			<!-- Chat Messages (appears below news content when chat mode is active) -->
+			{#if chatMode}
+				<div class="flex flex-col gap-4 border-t border-white/7 pt-6">
+					<div class="flex h-[30px] items-center px-2">
+						<p class="text-xs font-medium leading-[12px] text-[#91918e]">AI Conversation</p>
+					</div>
+					<div class="flex flex-col gap-4">
+						{#if messages.length === 0}
+							<div class="flex items-center justify-center py-8">
+								<div class="text-center">
+									<Bot class="mx-auto mb-4 size-12 text-white/40" />
+									<p class="text-sm text-white/60">Start a conversation about this news</p>
+								</div>
+							</div>
+						{:else}
+							{#each messages as message (message.timestamp.getTime())}
+								<div
+									class="flex gap-3 {message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}"
+								>
+									<div
+										class="flex size-8 shrink-0 items-center justify-center rounded-full {message.role === 'user'
+											? 'bg-white/20'
+											: 'bg-white/10'}"
+									>
+										{#if message.role === "user"}
+											<User class="size-4 text-white" />
+										{:else}
+											<Bot class="size-4 text-white" />
+										{/if}
+									</div>
+									<div
+										class="flex max-w-[80%] flex-col gap-1 {message.role === 'user' ? 'items-end' : 'items-start'}"
+									>
+										<div
+											class="rounded-lg px-4 py-2.5 text-sm {message.role === 'user'
+												? 'bg-white/10 text-white'
+												: 'bg-white/5 text-white/90'}"
+										>
+											{message.content}
+										</div>
+										<span class="text-xs text-white/40">{formatTime(message.timestamp)}</span>
+									</div>
+								</div>
+							{/each}
+							{#if loading}
+								<div class="flex gap-3">
+									<div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+										<Bot class="size-4 text-white" />
+									</div>
+									<div class="flex flex-col gap-1">
+										<div class="rounded-lg bg-white/5 px-4 py-2.5 text-sm text-white/90">
+											<div class="flex gap-1">
+												<span class="h-2 w-2 animate-bounce rounded-full bg-white/60 [animation-delay:-0.3s]"></span>
+												<span class="h-2 w-2 animate-bounce rounded-full bg-white/60 [animation-delay:-0.15s]"></span>
+												<span class="h-2 w-2 animate-bounce rounded-full bg-white/60"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+							{/if}
+						{/if}
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Deep dive with AI -->
-		<div class="sticky bottom-0 border-t border-white/7 bg-[#171717] px-4 py-4">
+		<div class="sticky bottom-0 border-t border-white/7 bg-[#171717] px-4 py-4 transition-all duration-300 {chatMode
+			? 'pb-4'
+			: ''}">
 			<div class="flex items-center gap-2 rounded-xl border border-white/15 bg-[#2e2e2e] px-4 py-3">
 				<input
 					bind:value={aiInput}
+					onkeydown={handleKeydown}
 					type="text"
-					placeholder="Deep dive with AI"
+					placeholder={chatMode ? "Ask a follow-up question..." : "Deep dive with AI"}
 					class="flex-1 border-0 bg-transparent text-white placeholder:text-white/50 focus:outline-none"
+					disabled={loading}
 				/>
 				<button
 					type="button"
-					class="rounded-full border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20"
+					onclick={handleSendMessage}
+					disabled={loading || !aiInput.trim()}
+					class="rounded-full border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
 					aria-label="Send AI prompt"
 				>
 					<Send class="size-4" />
