@@ -12,9 +12,10 @@
 
 # Scheduled functions configuration
 # Note: Netlify scheduled functions are configured in the Netlify UI
-# or via netlify.toml using the following format:
-[[plugins]]
-  package = "@netlify/plugin-scheduled-functions"
+# Go to: Site settings > Functions > Scheduled functions
+# Add a new scheduled function with:
+# - Function name: scheduled-news-fetch
+# - Schedule: Your desired cron expression (e.g., "*/30 * * * *" for every 30 minutes)
 
 # Environment variables (set these in Netlify UI)
 # GROK_API_KEY
